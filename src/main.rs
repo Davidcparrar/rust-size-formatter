@@ -1,3 +1,4 @@
+#[derive(Debug)]
 enum FileSize {
     Bytes(u64),
     Kilobytes(u64),
@@ -5,24 +6,69 @@ enum FileSize {
     Gigabytes(u64),
 }
 
-fn format_size(size: u64) -> String {
-    let filesize = match size {
-        0..=999 => FileSize::Bytes(size),
-        1000..=999_999 => FileSize::Kilobytes(size / 1000),
-        1_000_000..=999_999_999 => FileSize::Megabytes(size / 1_000_000),
-        _ => FileSize::Gigabytes(size / 1_000_000_000),
-    };
+impl FileSize {
+    fn _format_size_template(&self,bytes: u64, kb: u64, mb : u64, gb: u64) -> String{
+        format!(
+            concat!(
+                "{{",
+                "bytes: \"{} bytes\", ",
+                "kilobytes: \"{} kilobytes\", ",
+                "megabytes: \"{} megabytes\", ",
+                "gigabytes: \"{} gigabytes\"",
+                "}}"), bytes, kb, mb, gb)
+    }
+    fn format_size(&self) -> String {
 
-    match filesize {
-        FileSize::Bytes(bytes) => format!("{} bytes", bytes),
-        FileSize::Kilobytes(kb) => format!("{:.2} KB", kb as f64 / 1000.0),
-        FileSize::Megabytes(mb) => format!("{:.2} MB", mb as f64 / 1000.0),
-        FileSize::Gigabytes(gb) => format!("{:.2} GB", gb as f64 / 1000.0),
+        match self {
+            FileSize::Bytes(bytes) => self._format_size_template(
+                *bytes, 
+                bytes * 1000,
+                bytes * 1000_000, 
+                bytes * 1000_000_000
+            ),
+            FileSize::Kilobytes(kb) => self._format_size_template(
+                kb *1000,
+                *kb,
+                kb / 1000, 
+                kb / 1000_000
+            ),            
+            FileSize::Megabytes(mb) => self._format_size_template(
+                mb * 1000_000,
+                mb * 1000,
+                *mb, 
+                mb / 1000
+            ), 
+            FileSize::Gigabytes(gb) => self._format_size_template(
+                gb * 1000_000_000,
+                gb * 1000_000,
+                gb * 1000, 
+                *gb
+            ), 
+        }
     }
 }
-
-
 fn main() {
-    let result = format_size(6888837399);
-    println!("{}", result)
+    // Read input arguments value (i64) size (str)
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() < 2 {
+        println!("Please provide two arguments: value (i64) and size (str)");
+        return;
+    }
+    let parts: Vec<&str> = args[1].split_whitespace().collect();
+
+    let value = parts[0].parse::<u64>().expect("Failed to parse value");
+    let size = parts[1].to_string();
+
+    let filesize = match size.as_str() {
+        "bytes" => FileSize::Bytes(value),
+        "kb" => FileSize::Kilobytes(value),
+        "mb" => FileSize::Megabytes(value),
+        "gb" => FileSize::Gigabytes(value),
+        _ => {
+            println!("Please provide a valid size (b, kb, mb, gb)");
+            return;
+        }
+    };
+    println!("String {}", filesize.format_size())
 }
